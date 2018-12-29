@@ -1,4 +1,4 @@
-# ASP Stored Procedure Class 1.2
+# ASP Stored Procedure Class 1.3
 
 This class encapsulates the creation, execution and deletion of stored procedures ([SP][sp]) for the MS Access database using [ASP Classic][asp]. It also supports loading of the SQL-statement that defines the SP from an external SQL-file.
 
