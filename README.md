@@ -29,12 +29,11 @@ End Function
 
 ```vb
 
-' To execute a store procedure named spGetEntryById
+' To execute a stored procedure named spGetEntryById
 Dim objSP
 Set objSP = New CStoredProc
 objSP.Name = "spGetEntryById"
 objSP.AddParam "@id", "LONG", 1
-objSP.Execute objCn, objRs
 Set objRs = objSP.Execute(objCn)
 Set objSP = Nothing
 
@@ -75,7 +74,7 @@ objSP.Create objCn
 Set objSP = Nothing
 ```
 
-Never use the same `CStoredProc` object to create different stored procedures, but use a code structure as follows.
+Never use the same `CStoredProc` object to create different stored procedures. Instead, use a code structure as follows.
 
 ```vb
 Set objSP = New CStoredProc
@@ -141,7 +140,7 @@ Set objSP = Nothing
 ### Version 1.2, 2012-12-27
 > * The Execute method now surrounds input arguments by 'value' except for the data types `BYTE`, `TINYINT`, `INTEGER`, `LONG`. It also replaces the value with `NULL` if `IsNull(value)` returns `true`. This solved an issue when trying to insert an emtpy string with a stored procesudre call.
 
-Version 1.1, 2012-12-26
+### Version 1.1, 2012-12-26
 > * `Create`, `Delete` and `LoadSQL` return `TRUE` on success, otherwise `FALSE`.
 Use the following code to execute the stored procedure: `Set objRs = objSP.Execute(objCn)`
 

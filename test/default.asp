@@ -2,7 +2,7 @@
 Option Explicit
 Response.Buffer = True
 %>
-<!--#include file="../include/adovbs.inc" -->
+<!--#include file="adovbs.inc" -->
 <!--#include file="../CStoredProc.asp" -->
 <%
 Function readSqlFromFile(sql)
