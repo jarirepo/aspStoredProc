@@ -19,6 +19,21 @@ Class CStoredProc
 	Public Property Get Name()
 		Name = m_Name
 	End Property
+
+	' Param (Read/Write)
+	Public Property Let Param(strName, value)
+		If m_Params.Exists(strName) Then
+			m_Params.Item(strName).Value = value
+		End If
+	End Property
+
+	Public Property Get Param(strName)
+		If m_Params.Exists(strName) Then
+			Set Param = m_Params.Item(strName)
+		Else
+			Set Param = Nothing
+		End If
+	End Property
 	
 	' CommandText (Read-only)
 	Public Property Get CommandText()
@@ -34,7 +49,7 @@ Class CStoredProc
 	End Property
 
 	' AddParam - adds a parameter
-	Public Sub AddParam(strName, strType, strValue)
+	Public Sub AddParam(strName, strType, value)
 		Dim objParam
 		If m_Params.Exists(strName) Then
 			Set objParam = m_Params.Item(strName)
@@ -43,7 +58,7 @@ Class CStoredProc
 		End If
 		objParam.Name = strName
 		objParam.DataType = strType
-		objParam.Value = strValue
+		objParam.Value = value
 		If m_Params.Exists(strName) Then
 			Set m_Params.Item(strName) = objParam 'Update param
 		Else
@@ -55,10 +70,7 @@ Class CStoredProc
 	' SetParam - sets a parameter value
 	Public Sub SetParam(strName, value)
 		If m_Params.Exists(strName) Then
-			Dim objParam
-			Set objParam = m_Params.Item(strName)
-			objParam.Value = value
-			Set m_Params.Item(strName) = objParam
+			m_Params.Item(strName).Value = value
 		End If
 	End Sub
 
@@ -110,53 +122,70 @@ Class CStoredProc
 	' Execute -- executes a stored procedure
 	Public Function Execute(objCn)
 		Set Execute = Nothing
-		If Len(m_Name)=0 Then Exit Function
+		GetCommandText
+		If m_CmdText <> "" Then
+			' Executes the command
+			m_Cmd.ActiveConnection = objCn
+			m_Cmd.CommandType = adCmdStoredProc
+			m_Cmd.CommandText = m_CmdText
+			Set Execute = m_Cmd.Execute()
+		End If
+		'	Dim objRs
+		'	Set objRs = Server.CreateObject("ADODB.Recordset")
+		'	objRs.Open strProcName, objCn, adUseClient, adOpenForwardOnly, adCmdStoredProc
+		'	objRs.Close()
+		'	Set objRs = Nothing
+	End Function
 
-		If m_Params.Count > 0 Then
-			Dim objParam, strArgs
-			strArgs = ""
-			' Constructs a list with the input arguments
-			For Each objParam In m_Params.Items
-				If strArgs <> "" Then strArgs = strArgs & ", "
-				Select Case UCase(objParam.DataType)
+	Public Sub ExecuteNoResult(objCn)
+		GetCommandText
+		If m_CmdText <> "" Then
+			m_Cmd.ActiveConnection = objCn
+			m_Cmd.CommandType = adCmdStoredProc
+			m_Cmd.CommandText = m_CmdText
+			m_Cmd.Execute()
+		End If
+	End Sub
+
+	Private Sub GetCommandText()
+		If Len(m_Name) = 0 Then
+			m_CmdText = ""
+			Exit Sub
+		End If
+
+		If m_Params.Count = 0 Then
+			m_CmdText = Replace(SP_EXEC_NOPARAMS, "$name", m_Name)
+			Exit Sub
+		End If
+
+		Dim objParam, strArgs
+		strArgs = ""
+		' Constructs a list with the input arguments
+		For Each objParam In m_Params.Items
+			If strArgs <> "" Then strArgs = strArgs & ", "
+			Select Case UCase(objParam.DataType)
 				Case "BYTE","TINYINT","INTEGER","LONG"
 					strArgs = strArgs & objParam.Value
 				Case Else
-					If IsNull(objParam.Value) Or Len(objParam.Value)=0 Then
+					If IsNull(objParam.Value) Or Len(objParam.Value) = 0 Then
 						strArgs = strArgs & "NULL"
 					Else
 						strArgs = strArgs & "'" & objParam.Value & "'"
 					End If
-				End Select
-			Next
-			' Constructs the command text
-			m_CmdText = Replace( Replace(SP_EXEC, _
-				"$name", m_Name), _
-				"$args", strArgs)
+			End Select
+		Next
+
+		' Constructs the command text
+		m_CmdText = Replace( Replace(SP_EXEC, _
+			"$name", m_Name), _
+			"$args", strArgs)
+
 	'		' Add input parameters
 	'		For Each objParam In m_Params.Items
 	'			m_Cmd.Parameters.Append m_Cmd.CreateParameter objParam.Name, adUnsignedInt, adParamInput, , objParam.Value
 	'		Next
 	'		strCmd = m_Name
-		Else
-			' No params - Constructs the command text
-			m_CmdText = Replace(SP_EXEC_NOPARAMS, _
-				"$name", m_Name)
-		End If
-
-		' Executes the command
-		m_Cmd.ActiveConnection = objCn
-		m_Cmd.CommandType = adCmdStoredProc
-		m_Cmd.CommandText = m_CmdText
-
-		Set Execute = m_Cmd.Execute()
-
-'	  	Dim objRs
-'		Set objRs = Server.CreateObject("ADODB.Recordset")
-'		objRs.Open strProcName, objCn, adUseClient, adOpenForwardOnly, adCmdStoredProc
-'		objRs.Close()
-'		Set objRs = Nothing
-	End Function 'Execute
+	End Sub
 
    	' Delete -- deletes a stored procedure from the DB
 	Public Function Delete(objCn)
